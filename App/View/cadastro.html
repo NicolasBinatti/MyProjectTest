@@ -1,0 +1,261 @@
+<div id="cadastro">
+    <h2> Cadastros de Cliente</h2><br>
+    <b-form @submit="onSubmit" @reset="onReset" v-if="show">
+        <b-container fluid>
+
+            <b-form-input v-model="form.idcliente" class="sr-only sr-only-focusable"></b-form-input>
+
+
+            <b-row class="my-1">
+                <b-col sm="2">
+                    <label for="input-none">Nome Completo:</label>
+                </b-col>
+                <b-col sm="10">
+                    <b-form-input v-model="form.nome" required :state="null"></b-form-input>
+                </b-col>
+            </b-row>
+
+            <b-row class="my-1">
+                <b-col sm="2">
+                    <label for="input-none">E-mail:</label>
+                </b-col>
+                <b-col sm="10">
+                    <b-form-input v-model="form.email" required type="email" placeholder="email@email.com">
+                    </b-form-input>
+                </b-col>
+            </b-row>
+
+            <b-row class="my-1">
+                <b-col sm="2">
+                    <label for="input-none">Data de Nascimento:</label>
+                </b-col>
+                <b-col sm="4">
+                    <b-form-input v-model="form.datanascimento" required type="date"></b-form-input>
+                </b-col>
+
+                <b-col sm="2">
+                    <label for="input-none">Sexo:</label>
+                </b-col>
+                <b-col sm="4">
+                    <b-form-select required v-model="form.sexo" class="mb-3">
+                        <option :value="null" disabled> Selecione...</option>
+                        <option value="m">Masculino</option>
+                        <option value="f">Feminino</option>
+                    </b-form-select>
+                </b-col>
+            </b-row>
+
+            <b-row class="my-1">
+                <b-col sm="2">
+                    <label for="input-none">Nome da Mãe:</label>
+                </b-col>
+                <b-col sm="10">
+                    <b-form-input v-model="form.nomemae" required :state="null" placeholder="Ex: Maria da Silva">
+                    </b-form-input>
+                </b-col>
+            </b-row>
+
+            <b-row class="my-1">
+                <b-col sm="2">
+                    <label for="input-none">Nome do Pai:</label>
+                </b-col>
+                <b-col sm="10">
+                    <b-form-input v-model="form.nomepai" required :state="null" placeholder="Ex: João José da Silva">
+                    </b-form-input>
+                </b-col>
+            </b-row>
+
+
+            <b-row class="my-1">
+                <b-col sm="2">
+                    <label for="input-none">Cep:</label>
+                </b-col>
+                <b-col sm="4">
+                    <b-form-input v-model="form.cep" required type="number" @keyup="getCep()"></b-form-input>
+                </b-col>
+
+                <b-col sm="2">
+                    <label for="input-none">Cidade:</label>
+                </b-col>
+                <b-col sm="4">
+                    <b-form-input v-model="form.cidade" required type="text"></b-form-input>
+                </b-col>
+            </b-row>
+
+            <b-row class="my-1">
+                <b-col sm="2">
+                    <label for="input-none">Largadouro:</label>
+                </b-col>
+                <b-col sm="4">
+                    <b-form-input v-model="form.rua" required type="text"></b-form-input>
+                </b-col>
+
+                <b-col sm="2">
+                    <label for="input-none">Estado:</label>
+                </b-col>
+                <b-col sm="4">
+                    <b-form-input v-model="form.uf" required :maxlength="2" type="text"></b-form-input>
+                </b-col>
+            </b-row>
+
+            <b-row class="my-1">
+                <b-col sm="1">
+                    <b-button v-if="update == false" type="reset" variant="danger">Limpar</b-button>
+                </b-col>
+                <b-col sm="10"></b-col>
+                <b-col sm="1">
+                    <b-button v-if="update == false" type="submit" float="right" variant="info">Salvar</b-button>
+                    <b-button v-if="update == true" @click="onUpdate()" float="right" variant="warning">Alterar
+                    </b-button>
+                </b-col>
+            </b-row>
+        </b-container>
+    </b-form>
+
+    <div>
+        <b-alert :show="dismissCountDown" dismissible variant="success" @dismissed="dismissCountDown=0"
+            @dismiss-count-down="countDownChanged">
+            Cadastrado Com Sucesso !
+        </b-alert>
+    </div>
+
+</div>
+<script>
+    this.cadastro = new Vue({
+        el: '#cadastro',
+        data() {
+            return {
+                header: { headers: { "Authorization": "Basic " + localStorage.BasicToken, "Content-Type": "application/json" } },
+                update: false,
+                form: {
+                    idcliente: null,
+                    nome: null,
+                    nome: null,
+                    email: null,
+                    datanascimento: null,
+                    sexo: null,
+                    nomemae: null,
+                    nomepai: null,
+                    cep: null,
+                    cidade: null,
+                    rua: null,
+                    uf: null
+                },
+                dismissSecs: 5,
+                dismissCountDown: 0,
+                show: true
+            }
+        },
+        created() {
+            var query = location.search.slice(1);
+            var partes = query.split('&');
+            var data = {};
+            partes.forEach(function (parte) {
+                var chaveValor = parte.split('=');
+                var chave = chaveValor[0];
+                var valor = chaveValor[1];
+                data[chave] = valor;
+            });
+
+            if (data.idcliente != null) {
+                this.update = true;
+                this.editCustumer(data.idcliente);
+            }
+        },
+        methods: {
+            async onSubmit(evt) {
+                self = this
+                evt.preventDefault()
+
+                let ret = await axios.post('http://localhost:81/v1/cadastro/save', { data: this.form }, this.header)
+                    .then(function (response) {
+                        retorno = response;
+                        self.showAlert();
+                        self.onReset(evt);
+                    })
+                    .catch(function (error) {
+                        retorno = error;
+                        console.log(error)
+                        alert('Erro ao efetuar o Cadastro');
+                    });
+
+            },
+            async onUpdate() {
+                console.log(JSON.stringify({ data: this.form }));
+
+                let ret = await axios.post('http://localhost:81/v1/cadastro/update', { data: this.form }, this.header)
+                    .then(function (response) {
+                        retorno = response;
+                        window.location.href = "http://localhost:81/Web/admin/relatorio";
+                    })
+                    .catch(function (error) {
+                        retorno = error;
+                        alert('Erro ao Editar o Cadastro');
+                    });
+
+            },
+            async getCep() {
+
+                if (this.form.cep.length == 8) {
+                    let ret = await axios.get('https://viacep.com.br/ws/' + this.form.cep + '/json/')
+                        .then(response => this.data = response.data)
+                        .catch(error => console.log(error));
+
+                    this.form.uf = (this.form.uf = !null || this.form.uf != ret.uf) ? ret.uf : this.form.uf;
+                    this.form.cidade = (this.form.cidade = !null || this.form.cidade != ret.localidade) ? ret.localidade : this.form.cidade;
+                    this.form.rua = (this.form.rua = !null || this.form.rua != ret.largadouro) ? ret.largadouro : this.form.rua;
+                }
+            },
+            async editCustumer(idcliente) {
+                self = this;
+                let ret = await axios.post('http://localhost:81/v1/cadastro/oneLoad', { idcliente: idcliente }, this.header)
+                    .then(function (response) {
+                        retorno = response;
+                        self.form.idcliente = response.data.idcliente;
+                        self.form.nome = response.data.nome
+                        self.form.email = response.data.email
+                        self.form.datanascimento = response.data.datanascimento
+                        self.form.sexo = response.data.sexo
+                        self.form.nomemae = response.data.nomemae
+                        self.form.nomepai = response.data.nomepai
+                        self.form.cep = response.data.cep
+                        self.form.cidade = response.data.cidade
+                        self.form.rua = response.data.rua
+                        self.form.uf = response.data.uf
+                    })
+                    .catch(function (error) {
+                        retorno = error;
+                        console.log(error)
+                        alert('Erro ao Alterar Cadastro Cadastro');
+                    });
+
+            },
+            countDownChanged(dismissCountDown) {
+                this.dismissCountDown = dismissCountDown
+            },
+            showAlert() {
+                this.dismissCountDown = this.dismissSecs
+            },
+            onReset(evt) {
+                evt.preventDefault()
+                // Reset our form values
+                this.form.idcliente = null
+                this.form.nome = ''
+                this.form.email = ''
+                this.form.datanascimento = null
+                this.form.sexo = null
+                this.form.nomemae = null
+                this.form.nomepai = null
+                this.form.cep = null
+                this.form.rua = null
+                this.form.uf = null
+                // Trick to reset/clear native browser form validation state
+                this.show = false
+                this.$nextTick(() => {
+                    this.show = true
+                })
+            },
+        }
+
+    });
+</script>

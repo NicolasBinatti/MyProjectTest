@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+
+    <title>Desafio Fullstack</title>
+
+    <!-- Required Stylesheets -->
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap/dist/css/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.css" />
+    <link type="text/css" rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons" />
+
+    <!-- Load polyfills to support older browsers -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver"></script>
+
+    <!-- Required scripts -->
+    <script src="https://unpkg.com/vue@latest/dist/vue.js"></script>
+    <script src="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.15.3/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@1.5.14/dist/vuetify.min.js"></script>
+</head>
+
+<body>
+
+    <!-- Our application root element -->
+    <div class="container">
+        <div style="margin-bottom: 40px;"></div>
+
+
+        <div id="login">
+            <b-form @submit="onSubmit">
+                <h2>Login</h2><br>
+                <b-row class="my-1">
+                    <b-col sm="1">
+                        <label for="input-none">Usuario:</label>
+                    </b-col>
+                    <b-col sm="3">
+                        <b-form-input v-model="form.user" required :state="null"></b-form-input>
+                    </b-col>
+                </b-row>
+
+                <b-row class="my-1">
+                    <b-col sm="1">
+                        <label for="input-none">Senha:</label>
+                    </b-col>
+                    <b-col sm="3">
+                        <b-form-input v-model="form.pass" required type="password">
+                        </b-form-input>
+                    </b-col>
+                </b-row>
+
+                <b-button type="submit" float="right" variant="info">Login</b-button>
+            </b-form>
+        </div>
+
+    </div>
+
+    <script>
+        this.login = new Vue({
+            el: '#login',
+            data: {
+                form: {
+                    user: '',
+                    pass: ''
+                }
+            },
+            methods: {
+                async onSubmit(evt) {
+                    self = this
+                    evt.preventDefault()
+                    // console.log(JSON.stringify(this.form))
+
+                    let ret = await axios.post('http://localhost:81/v1/login', { user: this.form.user, pass: this.form.pass }, { headers: { 'Content-Type': 'application/json' } })
+                        .then(function (response) {
+                            retorno = response.data;
+                            console.log(retorno)
+                            if (retorno.code == 200) {
+                                localStorage.BasicToken = btoa(self.form.user + ':' + self.form.pass)
+                                localStorage.user = self.form.user;
+                                window.location.href = "http://localhost:81/Web/admin";
+                            }
+
+                            if (retorno.code == 400) {
+                                alert('Login Invalido');
+                            }
+
+
+                        })
+                        .catch(function (error) {
+                            retorno = error;
+                            console.log(error)
+                            alert('Erro ao tentar Logar');
+                        });
+
+                },
+            },
+            computed: {
+            }
+        });
+    </script>
+</body>
+
+</html>

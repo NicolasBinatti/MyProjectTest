@@ -1,0 +1,160 @@
+<div id="table">
+    <template>
+        <b-container fluid>
+            <!-- User Interface controls -->
+            <h2>Relatorio de Registros</h2>
+            <b-row>
+                <b-col class="my-1" md="6">
+                    <b-form-group class="mb-0">
+                        <b-input-group>
+                            <b-form-input v-model="filter" placeholder="Filtrar"></b-form-input>
+                            <b-input-group-append>
+                                <b-button :disabled="!filter" @click="filter = ''">Limpar</b-button>
+                            </b-input-group-append>
+                        </b-input-group>
+                    </b-form-group>
+                </b-col>
+            </b-row>
+
+            <!-- Main table element -->
+            <b-table show-empty stacked="md" :items="items" :fields="fields" :current-page="currentPage"
+                :per-page="perPage" :filter="filter" :sort-direction="sortDirection" @filtered="onFiltered">
+
+                <template slot="actions" slot-scope="row">
+                    <b-button size="sm" variant="outline-primary" @click="info(row.item, row.index, $event.target)"
+                        class="mr-1">
+                        Info.
+                    </b-button>
+                    <b-button size="sm" variant="outline-warning" @click="editDate(row.item)" class="mr-1">
+                        Editar
+                    </b-button>
+                    <b-button variant="outline-danger" size="sm" @click="deleteData(row.item)" class="mr-1">
+                        Excluir
+                    </b-button>
+                </template>
+
+                <template slot="row-details" slot-scope="row">
+                    <b-card>
+                        <ul>
+                            <li v-for="(value, key) in row.item" :key="key">{{ key }}: {{ value }}</li>
+                        </ul>
+                    </b-card>
+                </template>
+            </b-table>
+
+
+            <b-row>
+                <b-col md="6" class="my-1">
+                    <b-pagination v-model="currentPage" :total-rows="totalRows" :per-page="perPage" class="my-0">
+                    </b-pagination>
+                </b-col>
+            </b-row>
+
+
+            <!-- Info modal -->
+            <b-modal :id="infoModal.id" :title="infoModal.title" ok-only @hide="resetInfoModal">
+                <p>Nome do Pai: {{infoModal.content.nomepai}}</p>
+                <p>Nome da Mãe: {{infoModal.content.nomemae}}</p>
+                <p>Cep: {{infoModal.content.cep}}</p>
+                <p>Endereço: {{infoModal.content.rua}}</p>
+                <p>Cidade: {{infoModal.content.cidade}}/{{infoModal.content.uf}}</p>
+                <p>Ultima alteração: {{infoModal.content.datamovimento}}</p>
+            </b-modal>
+        </b-container>
+
+    </template>
+</div>
+<script>
+    new Vue({
+        el: '#table',
+        data() {
+            return {
+                header: { headers: { "Authorization": "Basic " + localStorage.BasicToken, "Content-Type": "application/json" } },
+                items: [],
+                fields: [
+                    { key: 'nome', sortable: true },
+                    { key: 'email', sortable: true },
+                    { key: 'nasc', label: 'Data Nasc.', sortable: true, class: 'text-center' },
+                    { key: 'actions', label: '' }
+                ],
+                totalRows: 1,
+                currentPage: 1,
+                perPage: 5,
+                pageOptions: [5, 10, 15],
+                sortDirection: 'asc',
+                filter: ' ',
+                infoModal: {
+                    id: 'info-modal',
+                    title: '',
+                    content: ''
+                }
+            }
+        },
+        created() {
+            this.loadData();
+        },
+        computed: {
+            sortOptions() {
+                // Create an options list from our fields
+                return this.fields
+                    .filter(f => f.sortable)
+                    .map(f => {
+                        return { text: f.label, value: f.key }
+                    })
+            }
+        },
+        mounted() {
+            // Set the initial number of items
+            this.totalRows = this.items.length
+        },
+        methods: {
+            info(item, index, button) {
+                this.infoModal.title = `${item.nome}`
+                this.infoModal.content = item
+                this.$root.$emit('bv::show::modal', this.infoModal.id, button)
+            },
+            resetInfoModal() {
+                this.infoModal.title = ''
+                this.infoModal.content = ''
+            },
+            onFiltered(filteredItems) {
+                this.totalRows = filteredItems.length
+                this.currentPage = 1
+            },
+            async loadData() {
+                self = this;
+                let ret = await axios.post('http://localhost:81/v1/cadastro/load', {}, this.header)
+                    .then(function (response) {
+                        retorno = response;
+                        self.items = response.data;
+                    })
+                    .catch(function (error) {
+                        retorno = error;
+                        console.log(error)
+                        // alert('Erro ao Consultar Cadastros');
+                    });
+            },
+            async deleteData(item) {
+                self = this;
+                if (confirm("Deseja Excluir o Cliente ?")) {
+                    let ret = await axios.post('http://localhost:81/v1/cadastro/delete', { idcliente: item.idcliente }, this.header)
+                        .then(function (response) {
+                            retorno = response;
+                            self.loadData();
+                        })
+                        .catch(function (error) {
+                            retorno = error;
+                            console.log(error)
+                            alert('Erro ao Consultar Cadastros');
+                        });
+                }
+            },
+            editDate(item) {
+                if (confirm("Deseja editar o Cliente ?")) {
+                    window.location.href = "http://localhost:81/Web/admin/editar?idcliente=" + item.idcliente;
+                }
+            }
+        }
+
+    })
+</script>
